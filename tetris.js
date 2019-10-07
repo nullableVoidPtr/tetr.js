@@ -246,7 +246,6 @@ var pauseTime;
 var gameState = 3;
 
 var paused = false;
-var lineLimit;
 
 var replayKeys;
 var watchingReplay = false;
@@ -257,9 +256,6 @@ var gametype;
 var lastX, lastY, lastPos, landed;
 
 // Stats
-var lines;
-var statsFinesse;
-var piecesSet;
 var startTime;
 var digLines;
 
@@ -380,7 +376,6 @@ function init(gt) {
 		gametype = gt;
 	}
 
-	lineLimit = 40;
 
 	//Reset
 	column = 0;
@@ -396,19 +391,13 @@ function init(gt) {
 	toGreyRow = 21;
 	frame = 0;
 	lastPos = 'reset';
-	stack = new Stack(stackCtx, 10, 22);
+	stack = new Stack(stackCtx, 10, 22, statsPiece, statsLines);
 	hold = new Hold(holdCtx);
 	if (settings.Gravity === 0) gravity = gravityUnit * 4;
 	startTime = Date.now();
 	preview = new Preview(previewCtx);
 	//preview.draw();
 
-	statsFinesse = 0;
-	lines = 0;
-	piecesSet = 0;
-
-	statsPiece.innerHTML = piecesSet;
-	statsLines.innerHTML = lineLimit - lines;
 	statistics();
 	clear(stackCtx);
 	clear(activeCtx);
@@ -421,8 +410,8 @@ function init(gt) {
 
 		digLines = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
-		statsLines.innerHTML = 10;
-		statsLines.innerHTML = 10;
+		stack.statsLines.innerHTML = 10;
+		stack.statsLines.innerHTML = 10;
 		var randomNums = [];
 		for (var i = 0; i < 10; i++) {
 			var random = ~~(rng.next() * 10);
@@ -456,14 +445,6 @@ function range(start, end, inc) {
 	}
 	return array;
 }
-
-/**
- * Add divisor method so we can do clock arithmetics. This is later used to
- *  determine tetromino orientation.
- */
-Number.prototype.mod = function(n) {
-	return ((this % n) + n) % n;
-};
 
 /**
  * Shim.
@@ -798,7 +779,11 @@ function update() {
 	}
 
 	if (!(lastKeys & flags.holdPiece) && flags.holdPiece & keysDown) {
-		piece.swapHold(hold);
+		if (!piece.swapHold(hold)) {
+			gameState = 9;
+			msg.innerHTML = 'BLOCK OUT!';
+			menu(3);
+		}
 	}
 
 	if (flags.rotLeft & keysDown && !(lastKeys & flags.rotLeft)) {
@@ -823,12 +808,16 @@ function update() {
 		piece.hardDrop();
 	}
 
-	piece.update();
+	if (!piece.update()) {
+		gameState = 9;
+		msg.innerHTML = 'LOCK OUT!';
+		menu(3);
+	}
 
 	// Win
 	// TODO
 	if (gametype !== 3) {
-		if (lines >= lineLimit) {
+		if (stack.lines >= stack.lineLimit) {
 			gameState = 1;
 			msg.innerHTML = 'GREAT!';
 			menu(3);
@@ -886,7 +875,11 @@ function gameLoop() {
 			msg.innerHTML = '';
 			gameState = 0;
 			startTime = Date.now();
-			piece.new(preview.next());
+			if (!piece.new(preview.next())) {
+				gameState = 9;
+				msg.innerHTML = 'BLOCK OUT!';
+				menu(3);
+			}
 		}
 		// DAS Preload
 		if (lastKeys !== keysDown && !watchingReplay) {

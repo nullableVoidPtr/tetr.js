@@ -1,11 +1,19 @@
 class Stack {
-	constructor(context, x, y) {
+	constructor(context, x, y, statsPiece, statsLines) {
 		var cells = new Array(x);
 		for (var i = 0; i < x; i++) {
 			cells[i] = new Array(y);
 		}
 		this.grid = cells;
 		this.context = context;
+		this.statsFinesse = 0;
+		this.piecesSet = 0;
+		this.lineLimit = 40;
+		this.lines = 0;
+		this.statsPiece = statsPiece;
+		this.statsLines = statsLines;
+		this.statsPiece.innerHTML = this.piecesSet;
+		this.statsLines.innerHTML = this.lineLimit - this.lines;
 	}
 	/**
 	 * Adds tetro to the stack, and clears lines if they fill up.
@@ -38,10 +46,7 @@ class Stack {
 
 		// Lock out
 		if (!valid) {
-			gameState = 9;
-			msg.innerHTML = 'LOCK OUT!';
-			menu(3);
-			return;
+			return false;
 		}
 
 		// Check modified lines for full lines.
@@ -56,7 +61,7 @@ class Stack {
 			// Clear the line. This basically just moves down the stack.
 			// TODO Ponder during the day and see if there is a more elegant solution.
 			if (count === 10) {
-				lines++; // NOTE stats
+				this.lines++; // NOTE stats
 				if (gametype === 3) {
 					if (digLines.indexOf(row) !== -1) {
 						digLines.splice(digLines.indexOf(row), 1);
@@ -70,17 +75,18 @@ class Stack {
 			}
 		}
 
-		statsFinesse += piece.finesse - finesse[piece.index][piece.pos][column];
-		piecesSet++; // NOTE Stats
+		this.statsFinesse += piece.finesse - finesse[piece.index][piece.pos][column];
+		this.piecesSet++; // NOTE Stats
 		// TODO Might not need this (same for in init)
 		column = 0;
 
-		statsPiece.innerHTML = piecesSet;
+		this.statsPiece.innerHTML = this.piecesSet;
 
-		if (gametype !== 3) statsLines.innerHTML = lineLimit - lines;
-		else statsLines.innerHTML = digLines.length;
+		if (gametype !== 3) this.statsLines.innerHTML = this.lineLimit - this.lines;
+		else this.statsLines.innerHTML = digLines.length;
 
 		this.draw();
+		return true;
 	}
 	/**
 	 * Draws the stack.

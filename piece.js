@@ -45,11 +45,7 @@ class Piece {
 		//preview.next();
 
 		// Check for blockout.
-		if (!this.moveValid(0, 0, this.tetro)) {
-			gameState = 9;
-			msg.innerHTML = 'BLOCK OUT!';
-			menu(3);
-		}
+		return this.moveValid(0, 0, this.tetro);
 	}
 
 	rotate(direction) {
@@ -72,8 +68,8 @@ class Piece {
 		}
 
 		// Goes thorugh kick data until it finds a valid move.
-		var curPos = this.pos.mod(4);
-		var newPos = (this.pos + direction).mod(4);
+		var curPos = this.pos % 4;
+		var newPos = (this.pos + direction + 4) % 4;
 
 		for (var x = 0, len = this.kickData[0].length; x < len; x++) {
 			if (
@@ -209,14 +205,15 @@ class Piece {
 		if (!this.held) {
 			if (hold.piece !== void 0) {
 				hold.piece = this.index;
-				this.new(temp);
+				if (!this.new(temp)) return false;
 			} else {
 				hold.piece = this.index;
-				this.new(preview.next());
+				if (!this.new(preview.next())) return false;
 			}
 			this.held = true;
 			hold.draw();
 		}
+		return true;
 	}
 	/**
 	 * Checks if position and orientation passed is valid.
@@ -257,8 +254,8 @@ class Piece {
 			landed = true;
 			this.y = Math.floor(this.y);
 			if (this.lockDelay >= settings['Lock Delay']) {
-				stack.addPiece(this.tetro);
-				this.new(preview.next());
+				if (!stack.addPiece(this.tetro)) return false;
+				if (!this.new(preview.next())) return false;
 			} else {
 				var a = 1 / setting['Lock Delay'][settings['Lock Delay']];
 				this.context.globalCompositeOperation = 'source-atop';
@@ -268,6 +265,7 @@ class Piece {
 				this.lockDelay++;
 			}
 		}
+		return true;
 	}
 	draw() {
 		draw(this.tetro, this.x, this.y, this.context);
