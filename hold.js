@@ -1,4 +1,6 @@
-class Hold {
+import {pieces} from './piece.js'
+
+export default class {
 	constructor(context) {
 		this.piece = void 0;
 		this.context = context;

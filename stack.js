@@ -1,11 +1,14 @@
-class Stack {
-	constructor(context, x, y, statsPiece, statsLines) {
+import {finesse} from './piece.js'
+
+export default class {
+	constructor(canvas, x, y, statsPiece, statsLines) {
 		var cells = new Array(x);
 		for (var i = 0; i < x; i++) {
 			cells[i] = new Array(y);
 		}
 		this.grid = cells;
-		this.context = context;
+		this.canvas = canvas;
+		this.context = canvas.getContext('2d');
 		this.statsFinesse = 0;
 		this.piecesSet = 0;
 		this.lineLimit = 40;
@@ -14,23 +17,24 @@ class Stack {
 		this.statsLines = statsLines;
 		this.statsPiece.innerHTML = this.piecesSet;
 		this.statsLines.innerHTML = this.lineLimit - this.lines;
+		this.column = 0
 	}
 	/**
 	 * Adds tetro to the stack, and clears lines if they fill up.
 	 */
-	addPiece(tetro) {
+	addPiece(piece) {
 		var once = false;
 
 		// Add the piece to the stack.
 		var range = [];
 		var valid = false;
-		for (var x = 0; x < tetro.length; x++) {
-			for (var y = 0; y < tetro[x].length; y++) {
-				if (tetro[x][y]) {
-					this.grid[x + piece.x][y + piece.y] = tetro[x][y];
+		for (var x = 0; x < piece.tetro.length; x++) {
+			for (var y = 0; y < piece.tetro[x].length; y++) {
+				if (piece.tetro[x][y]) {
+					this.grid[x + piece.x][y + piece.y] = piece.tetro[x][y];
 					// Get column for finesse
-					if (!once || x + piece.x < column) {
-						column = x + piece.x;
+					if (!once || x + piece.x < this.column) {
+						this.column = x + piece.x;
 						once = true;
 					}
 					// Check which lines get modified
@@ -62,7 +66,7 @@ class Stack {
 			// TODO Ponder during the day and see if there is a more elegant solution.
 			if (count === 10) {
 				this.lines++; // NOTE stats
-				if (gametype === 3) {
+				if (window.gametype === 3) {
 					if (digLines.indexOf(row) !== -1) {
 						digLines.splice(digLines.indexOf(row), 1);
 					}
@@ -75,14 +79,14 @@ class Stack {
 			}
 		}
 
-		this.statsFinesse += piece.finesse - finesse[piece.index][piece.pos][column];
+		this.statsFinesse += piece.finesse - finesse[piece.index][piece.pos][this.column];
 		this.piecesSet++; // NOTE Stats
 		// TODO Might not need this (same for in init)
-		column = 0;
+		this.column = 0;
 
 		this.statsPiece.innerHTML = this.piecesSet;
 
-		if (gametype !== 3) this.statsLines.innerHTML = this.lineLimit - this.lines;
+		if (window.gametype !== 3) this.statsLines.innerHTML = this.lineLimit - this.lines;
 		else this.statsLines.innerHTML = digLines.length;
 
 		this.draw();
@@ -99,15 +103,15 @@ class Stack {
 		// TODO wrap this with an option.
 		this.context.globalCompositeOperation = 'source-atop';
 		this.context.fillStyle = 'rgba(0,0,0,0.3)';
-		this.context.fillRect(0, 0, stackCanvas.width, stackCanvas.height);
+		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 		this.context.globalCompositeOperation = 'source-over';
 
 		if (settings.Outline) {
 			var b = ~~(cellSize / 8);
 			var c = cellSize;
 			var lineCanvas = document.createElement('canvas');
-			lineCanvas.width = stackCanvas.width;
-			lineCanvas.height = stackCanvas.height;
+			lineCanvas.width = this.canvas.width;
+			lineCanvas.height = this.canvas.height;
 			var lineCtx = lineCanvas.getContext('2d');
 			lineCtx.fillStyle = 'rgba(255,255,255,0.5)';
 			lineCtx.beginPath();

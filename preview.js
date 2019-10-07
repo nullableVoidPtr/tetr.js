@@ -1,4 +1,6 @@
-class Preview {
+import {pieces} from './piece.js'
+
+export default class {
 	constructor(context) {
 		for (; !([3, 4, 6].indexOf((this.grabBag = this.gen())[0]) === -1); );
 		this.grabBag.push.apply(this.grabBag, this.gen());

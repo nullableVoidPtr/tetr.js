@@ -1,3 +1,8 @@
+import Hold from './hold.js'
+import Piece, {finesse, pieces} from './piece.js'
+import Preview from './preview.js'
+import Stack from './stack.js'
+
 /*
 Author: Simon Laroche
 Site: http://simon.lc/
@@ -12,7 +17,6 @@ the game so you know why some things are done a certain way.
  * Playfield.
  */
 var cellSize;
-var column;
 
 /**
  * Get html elements.
@@ -40,147 +44,14 @@ var activeCtx = activeCanvas.getContext('2d');
 var previewCtx = previewCanvas.getContext('2d');
 var spriteCtx = spriteCanvas.getContext('2d');
 
-/**
- * Piece data
- */
-
-// NOTE y values are inverted since our matrix counts from top to bottom.
-var kickData = [
-	[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
-	[[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
-	[[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]],
-	[[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
-];
-var kickDataI = [
-	[[0, 0], [-1, 0], [2, 0], [-1, 0], [2, 0]],
-	[[-1, 0], [0, 0], [0, 0], [0, -1], [0, 2]],
-	[[-1, -1], [1, -1], [-2, -1], [1, 0], [-2, 0]],
-	[[0, -1], [0, -1], [0, -1], [0, 1], [0, -2]],
-];
-// TODO get rid of this lol.
-var kickDataO = [[[0, 0]], [[0, 0]], [[0, 0]], [[0, 0]]];
-
-// Define shapes and spawns.
-var PieceI = {
-	index: 0,
-	x: 2,
-	y: -1,
-	kickData: kickDataI,
-	tetro: [
-		[0, 0, 0, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-		[0, 0, 1, 0, 0],
-	],
-};
-var PieceJ = {
-	index: 1,
-	x: 3,
-	y: 0,
-	kickData: kickData,
-	tetro: [[2, 2, 0], [0, 2, 0], [0, 2, 0]],
-};
-var PieceL = {
-	index: 2,
-	x: 3,
-	y: 0,
-	kickData: kickData,
-	tetro: [[0, 3, 0], [0, 3, 0], [3, 3, 0]],
-};
-var PieceO = {
-	index: 3,
-	x: 4,
-	y: 0,
-	kickData: kickDataO,
-	tetro: [[4, 4], [4, 4]],
-};
-var PieceS = {
-	index: 4,
-	x: 3,
-	y: 0,
-	kickData: kickData,
-	tetro: [[0, 5, 0], [5, 5, 0], [5, 0, 0]],
-};
-var PieceT = {
-	index: 5,
-	x: 3,
-	y: 0,
-	kickData: kickData,
-	tetro: [[0, 6, 0], [6, 6, 0], [0, 6, 0]],
-};
-var PieceZ = {
-	index: 6,
-	x: 3,
-	y: 0,
-	kickData: kickData,
-	tetro: [[7, 0, 0], [7, 7, 0], [0, 7, 0]],
-};
-var pieces = [PieceI, PieceJ, PieceL, PieceO, PieceS, PieceT, PieceZ];
-
-// Finesse data
-// index x orientatio x column = finesse
-// finesse[0][0][4] = 1
-// TODO double check these.
-var finesse = [
-	[
-		[1, 2, 1, 0, 1, 2, 1],
-		[2, 2, 2, 2, 1, 1, 2, 2, 2, 2],
-		[1, 2, 1, 0, 1, 2, 1],
-		[2, 2, 2, 2, 1, 1, 2, 2, 2, 2],
-	],
-	[
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 3, 2, 1, 2, 3, 3, 2],
-		[2, 3, 2, 1, 2, 3, 3, 2],
-		[2, 3, 2, 1, 2, 3, 3, 2, 2],
-	],
-	[
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 3, 2, 1, 2, 3, 3, 2],
-		[2, 3, 2, 1, 2, 3, 3, 2],
-		[2, 3, 2, 1, 2, 3, 3, 2, 2],
-	],
-	[
-		[1, 2, 2, 1, 0, 1, 2, 2, 1],
-		[1, 2, 2, 1, 0, 1, 2, 2, 1],
-		[1, 2, 2, 1, 0, 1, 2, 2, 1],
-		[1, 2, 2, 1, 0, 1, 2, 2, 1],
-	],
-	[
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 2, 1, 1, 2, 3, 2, 2],
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 2, 1, 1, 2, 3, 2, 2],
-	],
-	[
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 3, 2, 1, 2, 3, 3, 2],
-		[2, 3, 2, 1, 2, 3, 3, 2],
-		[2, 3, 2, 1, 2, 3, 3, 2, 2],
-	],
-	[
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 2, 1, 1, 2, 3, 2, 2],
-		[1, 2, 1, 0, 1, 2, 2, 1],
-		[2, 2, 2, 1, 1, 2, 3, 2, 2],
-	],
-];
 
 /**
  * Gameplay specific vars.
  */
 var gravityUnit = 0.00390625;
 var gravity;
-var gravityArr = (function() {
-	var array = [];
-	array.push(0);
-	for (var i = 1; i < 64; i++) array.push(i / 64);
-	for (var i = 1; i <= 20; i++) array.push(i);
-	return array;
-})();
 
-var settings = {
+window.settings = {
 	DAS: 10,
 	ARR: 1,
 	Gravity: 0,
@@ -195,7 +66,7 @@ var settings = {
 	Outline: 0,
 };
 
-var setting = {
+window.setting = {
 	DAS: range(0, 31),
 	ARR: range(0, 11),
 	Gravity: (function() {
@@ -227,7 +98,7 @@ var frame;
 var hold;
 var preview;
 var stack;
-var piece = new Piece(activeCtx);
+var piece;
 
 /**
  *Pausing variables
@@ -250,10 +121,10 @@ var paused = false;
 var replayKeys;
 var watchingReplay = false;
 var toGreyRow;
-var gametype;
+window.gametype;
 //TODO Make dirty flags for each canvas, draw them all at once during frame call.
 // var dirtyHold, dirtyActive, dirtyStack, dirtyPreview;
-var lastX, lastY, lastPos, landed;
+var lastX, lastY, lastPos;
 
 // Stats
 var startTime;
@@ -365,7 +236,7 @@ addEventListener('resize', resize, false);
 /**
  * Resets all the settings and starts the game.
  */
-function init(gt) {
+window.init = function (gt) {
 	if (gt === 'replay') {
 		watchingReplay = true;
 	} else {
@@ -373,12 +244,11 @@ function init(gt) {
 		replayKeys = {};
 		// TODO Make new seed and rng method.
 		replayKeys.seed = ~~(Math.random() * 2147483645) + 1;
-		gametype = gt;
+		window.gametype = gt;
 	}
 
 
 	//Reset
-	column = 0;
 	keysDown = 0;
 	lastKeys = 0;
 	released = 255;
@@ -391,7 +261,8 @@ function init(gt) {
 	toGreyRow = 21;
 	frame = 0;
 	lastPos = 'reset';
-	stack = new Stack(stackCtx, 10, 22, statsPiece, statsLines);
+	stack = new Stack(stackCanvas, 10, 22, statsPiece, statsLines);
+	piece = new Piece(activeCanvas, stack);
 	hold = new Hold(holdCtx);
 	if (settings.Gravity === 0) gravity = gravityUnit * 4;
 	startTime = Date.now();
@@ -403,7 +274,7 @@ function init(gt) {
 	clear(activeCtx);
 	clear(holdCtx);
 
-	if (gametype === 3) {
+	if (window.gametype === 3) {
 		// Dig Race
 		// make ten random numbers, make sure next isn't the same as last?
 		//TODO make into function or own file.
@@ -480,7 +351,7 @@ function unpause() {
  * Park Miller "Minimal Standard" PRNG.
  */
 //TODO put random seed method in here.
-var rng = new function() {
+window.rng = new function() {
 	this.seed = 1;
 	this.next = function() {
 		// Returns a float between 0.0, and 1.0
@@ -679,14 +550,14 @@ function makeSprite() {
 /**
  * Clear canvas.
  */
-function clear(ctx) {
+window.clear = function (ctx) {
 	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 }
 
 /**
  * Draws a 2d array of minos.
  */
-function draw(tetro, cx, cy, ctx, color) {
+window.draw = function (tetro, cx, cy, ctx, color) {
 	for (var x = 0, len = tetro.length; x < len; x++) {
 		for (var y = 0, wid = tetro[x].length; y < wid; y++) {
 			if (tetro[x][y])
@@ -713,7 +584,7 @@ addEventListener(
 			}
 		}
 		if (e.keyCode === binds.retry) {
-			init(gametype);
+			init(window.gametype);
 		}
 		if (!watchingReplay) {
 			if (e.keyCode === binds.moveLeft) {
@@ -779,7 +650,7 @@ function update() {
 	}
 
 	if (!(lastKeys & flags.holdPiece) && flags.holdPiece & keysDown) {
-		if (!piece.swapHold(hold)) {
+		if (!piece.swapHold(hold, preview)) {
 			gameState = 9;
 			msg.innerHTML = 'BLOCK OUT!';
 			menu(3);
@@ -798,7 +669,7 @@ function update() {
 		piece.finesse++;
 	}
 
-	piece.checkShift();
+	piece.checkShift(keysDown, lastKeys, flags);
 
 	if (flags.moveDown & keysDown) {
 		piece.shiftDown();
@@ -808,7 +679,7 @@ function update() {
 		piece.hardDrop();
 	}
 
-	if (!piece.update()) {
+	if (!piece.update(gravity, preview)) {
 		gameState = 9;
 		msg.innerHTML = 'LOCK OUT!';
 		menu(3);
@@ -816,7 +687,7 @@ function update() {
 
 	// Win
 	// TODO
-	if (gametype !== 3) {
+	if (window.gametype !== 3) {
 		if (stack.lines >= stack.lineLimit) {
 			gameState = 1;
 			msg.innerHTML = 'GREAT!';
@@ -912,3 +783,260 @@ function gameLoop() {
 		}
 	}
 }
+
+/**
+ * Menu
+ */
+
+var version = '0.1.8';
+var setLoop;
+var arrowReleased = true;
+var arrowDelay = 0;
+
+var key = {
+	8: 'Backspace',
+	9: 'Tab',
+	13: 'Enter',
+	16: 'Shift',
+	17: 'Ctrl',
+	18: 'Alt',
+	19: 'Pause',
+	20: 'Caps Lock',
+	27: 'Esc',
+	32: 'Space',
+	33: 'PgUp',
+	34: 'PgDn',
+	35: 'End',
+	36: 'Home',
+	37: '←',
+	38: '↑',
+	39: '→',
+	40: '↓',
+	45: 'Insert',
+	46: 'Delete',
+	48: '0',
+	49: '1',
+	50: '2',
+	51: '3',
+	52: '4',
+	53: '5',
+	54: '6',
+	55: '7',
+	56: '8',
+	57: '9',
+	59: ';',
+	61: '=',
+	65: 'A',
+	66: 'B',
+	67: 'C',
+	68: 'D',
+	69: 'E',
+	70: 'F',
+	71: 'G',
+	72: 'H',
+	73: 'I',
+	74: 'J',
+	75: 'K',
+	76: 'L',
+	77: 'M',
+	78: 'N',
+	79: 'O',
+	80: 'P',
+	81: 'Q',
+	82: 'R',
+	83: 'S',
+	84: 'T',
+	85: 'U',
+	86: 'V',
+	87: 'W',
+	88: 'X',
+	89: 'Y',
+	90: 'Z',
+	96: '0kpad',
+	97: '1kpad',
+	98: '2kpad',
+	99: '3kpad',
+	100: '4kpad',
+	101: '5kpad',
+	102: '6kpad',
+	103: '7kpad',
+	104: '8kpad',
+	105: '9kpad',
+	106: '*',
+	107: '+',
+	109: '-',
+	110: '.',
+	111: '/',
+	112: 'F1',
+	113: 'F2',
+	114: 'F3',
+	115: 'F4',
+	116: 'F5',
+	117: 'F6',
+	118: 'F7',
+	119: 'F8',
+	120: 'F9',
+	121: 'F10',
+	122: 'F11',
+	123: 'F12',
+	173: '-',
+	187: '=',
+	188: ',',
+	190: '.',
+	191: '/',
+	192: '`',
+	219: '[',
+	220: '\\',
+	221: ']',
+	222: "'",
+};
+
+/**
+ * Show and hide menus.
+ */
+var menus = document.getElementsByClassName('menu');
+window.menu = function (menuIndex) {
+	for (var i = 0, len = menus.length; i < len; i++) {
+		menus[i].classList.remove('on');
+	}
+	if (menuIndex !== void 0) menus[menuIndex].classList.add('on');
+}
+
+/**
+ * Controls Menu
+ */
+var newKey,
+	currCell,
+	tempKey,
+	controls = document.getElementById('controls'),
+	controlCells = controls.getElementsByTagName('td');
+// Give controls an event listener.
+for (var i = 0, len = controlCells.length; i < len; i++) {
+	controlCells[i].onclick = function() {
+		// First check if we're already waiting for an input.
+		if (currCell) {
+			// TODO DRY
+			// Make this into a function and call it when we press Esc.
+			binds[currCell.id] = tempKey;
+			currCell.innerHTML = key[tempKey];
+		}
+		tempKey = binds[this.id];
+		this.innerHTML = 'Press key';
+		currCell = this;
+	};
+}
+// Listen for key input if a control has been clicked on.
+addEventListener(
+	'keyup',
+	function(e) {
+		// if click outside of cell or press esc clear currCell
+		// reset binds button.
+		if (currCell) {
+			// Checks if key already in use, and unbinds it.
+			for (var i in binds) {
+				if (e.keyCode === binds[i]) {
+					binds[i] = void 0;
+					document.getElementById(i).innerHTML = binds[i];
+				}
+			}
+			// Binds the key and saves the data.
+			binds[currCell.id] = e.keyCode;
+			currCell.innerHTML = key[e.keyCode];
+			localStorage.setItem('binds', JSON.stringify(binds));
+			currCell = 0;
+		}
+	},
+	false,
+);
+
+/**
+ * Settings Menu
+ */
+function settingsLoop() {
+	if (arrowReleased || arrowDelay >= 6) {
+		if (settingsArrow)
+			settings[s] = settings[s] === 0 ? setting[s].length - 1 : settings[s] - 1;
+		else
+			settings[s] = settings[s] === setting[s].length - 1 ? 0 : settings[s] + 1;
+		saveSetting(s);
+		arrowReleased = false;
+	} else {
+		arrowDelay++;
+	}
+	setLoop = setTimeout(settingsLoop, 50);
+}
+var s;
+var settingsArrow;
+// TODO DRY this.
+function arrowRelease() {
+	resize();
+	arrowReleased = true;
+	arrowDelay = 0;
+	clearTimeout(setLoop);
+}
+function left() {
+	settingsArrow = 1;
+	s = this.parentNode.id;
+	this.onmouseup = arrowRelease;
+	this.onmouseout = arrowRelease;
+	settingsLoop();
+}
+function right() {
+	settingsArrow = 0;
+	s = this.parentNode.id;
+	this.onmouseup = arrowRelease;
+	this.onmouseout = arrowRelease;
+	settingsLoop();
+}
+
+/**
+ * LocalStorage functions
+ */
+function saveSetting(s) {
+	localStorage['version'] = version;
+
+	document.getElementById(s).getElementsByTagName('span')[0].innerHTML =
+		setting[s][settings[s]];
+
+	localStorage['settings'] = JSON.stringify(settings);
+}
+function loadLocalData() {
+	if (localStorage['binds']) {
+		binds = JSON.parse(localStorage.getItem('binds'));
+		for (var i = 0, len = controlCells.length; i < len; i++) {
+			controlCells[i].innerHTML = key[binds[controlCells[i].id]];
+		}
+	}
+	// TODO When new version just update with new stuff, rest stays unchanged.
+	if (localStorage['version'] !== version) {
+		localStorage.removeItem('settings');
+		localStorage.removeItem('binds');
+	}
+	if (localStorage['settings']) {
+		settings = JSON.parse(localStorage.getItem('settings'));
+	}
+}
+
+loadLocalData();
+for (var s in settings) {
+	var div = document.createElement('div');
+	var b = document.createElement('b');
+	var iLeft = document.createElement('i');
+	var span = document.createElement('span');
+	var iRight = document.createElement('i');
+
+	div.id = s;
+	b.innerHTML = s + ':';
+	span.innerHTML = setting[s][settings[s]];
+	iLeft.className = 'left';
+	iRight.className = 'right';
+	iLeft.onmousedown = left;
+	iRight.onmousedown = right;
+
+	set.appendChild(div);
+	div.appendChild(b);
+	div.appendChild(iLeft);
+	div.appendChild(span);
+	div.appendChild(iRight);
+}
+resize();
